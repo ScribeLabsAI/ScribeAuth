@@ -23,7 +23,7 @@ jobs:
       - name: Install deps
         run: poetry install
       - name: Run tests
-        run: poetry run pytest
+        run: poetry run coverage run -m pytest
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           USERNAME: ${{ secrets.USERNAME }}
@@ -32,8 +32,8 @@ jobs:
           OTPCODE: ${{ secrets.OTPCODE }}
           USER_POOL_ID: ${{ secrets.USER_POOL_ID }}
       - name: Publish code coverage
-        uses: paambaati/codeclimate-action@v6.0.0
+        uses: paambaati/codeclimate-action@v9.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
         with:
-          coverageCommand: coverage xml
+          coverageCommand: poetry run coverage xml
