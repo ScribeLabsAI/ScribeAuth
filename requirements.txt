@@ -59,4 +59,4 @@ types-s3transfer==0.10.1
 typing==3.7.4.3
 typing_extensions==4.11.0
 urllib3<2.3
-zipp==3.18.1
+zipp==3.19.1
