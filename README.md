@@ -76,6 +76,12 @@ You can also use the package as follows for quick access to tokens:
 python -m scribeauth --client_id clientid --user_pool_id user_pool_id --username username --password password
 ```
 
+## Development
+
+First step is to install poetry https://python-poetry.org/docs/. Then `poetry install` will install all the dependencies. Might require setting a virtualenv through poetry itself, or manually.
+
+Run the tests with `poetry run pytest`.
+
 ---
 
 To flag an issue, open a ticket on [Github](https://github.com/ScribeLabsAI/ScribeAuth/issues) and contact us on Intercom through the platform.
