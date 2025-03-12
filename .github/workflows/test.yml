@@ -15,14 +15,16 @@ jobs:
     steps:
       - name: Clone
         uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: '3.11'
+          cache: 'poetry'
       - name: Install deps
-        run: pip install -r requirements.txt        
+        run: poetry install
       - name: Run tests
-        run: python -m coverage run -m pytest
+        run: poetry run pytest
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           USERNAME: ${{ secrets.USERNAME }}
@@ -30,7 +32,6 @@ jobs:
           PASSWORD: ${{ secrets.PASSWORD }}
           OTPCODE: ${{ secrets.OTPCODE }}
           USER_POOL_ID: ${{ secrets.USER_POOL_ID }}
-          FEDERATED_POOL_ID: ${{ secrets.FEDERATED_POOL_ID }}
       - name: Publish code coverage
         uses: paambaati/codeclimate-action@v6.0.0
         env:
