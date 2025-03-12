@@ -8,12 +8,7 @@ import pytest
 from botocore.awsrequest import AWSRequest
 from dotenv import load_dotenv
 
-from scribeauth import (
-    MissingIdException,
-    ResourceNotFoundException,
-    ScribeAuth,
-    UnauthorizedException,
-)
+from scribeauth import ScribeAuth, UnauthorizedException
 from scribeauth.scribeauth import Challenge, Tokens
 
 load_dotenv(override=True)
@@ -62,7 +57,7 @@ class TestScribeAuthGetTokensNoMFA:
             access.get_tokens(refresh_token="refresh_token")
 
 
-class TestScribeAuthGetTokensMFA(unittest.TestCase):
+class TestScribeAuthGetTokensMFA:
     def test_get_tokens_asks_mfa(self):
         challenge = access.get_tokens(username=username2, password=password)
         assert isinstance(challenge, Challenge)
@@ -82,11 +77,11 @@ class TestScribeAuthGetTokensMFA(unittest.TestCase):
         sleep(61)
         user_tokens = access.get_tokens(refresh_token=refresh_token)
         user_tokens = assert_tokens(self, user_tokens)
-        self.assertEqual(refresh_token, user_tokens.refresh_token)
+        assert refresh_token == user_tokens.refresh_token
 
     def test_get_tokens_fails_with_wrong_mfa_code(self):
         challenge = access.get_tokens(username=username2, password=password)
-        with self.assertRaises(UnauthorizedException):
+        with pytest.raises(UnauthorizedException):
             assert isinstance(challenge, Challenge)
             access.respond_to_auth_challenge_mfa(
                 username=username2, session=challenge.session, code="000000"
@@ -96,35 +91,36 @@ class TestScribeAuthGetTokensMFA(unittest.TestCase):
         challenge = access.get_tokens(username=username2, password=password)
         code = otp.now()
         sleep(61)
-        with self.assertRaises(UnauthorizedException):
+        with pytest.raises(UnauthorizedException):
             assert isinstance(challenge, Challenge)
             access.respond_to_auth_challenge_mfa(
                 username=username2, session=challenge.session, code=code
             )
 
 
-class TestScribeAuthRevokeRefreshTokens(unittest.TestCase):
+class TestScribeAuthRevokeRefreshTokens:
     def test_revoke_refresh_token_successfully(self):
         refresh_token = generate_refresh_token_for_test()
-        self.assertTrue(access.revoke_refresh_token(refresh_token))
+
+        assert access.revoke_refresh_token(refresh_token)
 
     def test_revoke_refresh_token_unexistent_successfully(self):
-        self.assertTrue(access.revoke_refresh_token("refresh_token"))
+        assert access.revoke_refresh_token("refresh_token")
 
     def test_revoke_refresh_token_and_use_old_refresh_token_fails(self):
         refresh_token = generate_refresh_token_for_test()
-        self.assertTrue(access.revoke_refresh_token(refresh_token))
-        with self.assertRaises(UnauthorizedException):
+        assert access.revoke_refresh_token(refresh_token)
+        with pytest.raises(UnauthorizedException):
             access.get_tokens(refresh_token=refresh_token)
 
     def test_revoke_refresh_token_invalid_and_use_valid_refresh_token_successfully(
         self,
     ):
         refresh_token = generate_refresh_token_for_test()
-        self.assertTrue(access.revoke_refresh_token("refresh_token"))
+        assert access.revoke_refresh_token("refresh_token")
         user_tokens = access.get_tokens(refresh_token=refresh_token)
         user_tokens = assert_tokens(self, user_tokens)
-        self.assertEqual(refresh_token, user_tokens.refresh_token)
+        assert user_tokens.refresh_token == refresh_token
 
 
 def generate_refresh_token_for_test():
