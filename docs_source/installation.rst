@@ -7,7 +7,7 @@ To use Scribe Auth, first install it using pip:
 
    (.venv) $ pip install scribeauth
 
-This library requires Python >= 3.10 that supports typings.
+This library requires Python >= 3.11 that supports typings.
 
 
 --------------

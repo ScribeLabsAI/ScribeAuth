@@ -11,8 +11,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install poetry
+        run: pipx install poetry
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: poetry install
       - name: Create md files
         run: sphinx-build -M markdown ./docs_source ./docs
       - name: Update docs website

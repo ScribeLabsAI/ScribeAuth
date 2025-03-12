@@ -1,47 +1,24 @@
-from datetime import datetime
+from dataclasses import dataclass
 from typing import overload
 
 import boto3
 import botocore
 import botocore.session
-from botocore.auth import SigV4Auth
-from botocore.awsrequest import AWSRequest
 from botocore.config import Config
 from botocore.exceptions import NoAuthTokenError
-from typing_extensions import NotRequired, TypedDict, Unpack
 
 
-class Tokens(TypedDict):
+@dataclass
+class Tokens:
     refresh_token: str
     access_token: str
     id_token: str
 
 
-class Challenge(TypedDict):
+@dataclass
+class Challenge:
     challenge_name: str
     session: str
-
-
-class RefreshToken(TypedDict):
-    refresh_token: str
-
-
-class UsernamePassword(TypedDict):
-    username: str
-    password: str
-
-
-class Credentials(TypedDict):
-    AccessKeyId: str
-    SecretKey: str
-    SessionToken: str
-    Expiration: datetime
-
-
-class PoolConfiguration(TypedDict):
-    client_id: str
-    user_pool_id: str
-    identity_pool_id: NotRequired[str | None]
 
 
 class UnauthorizedException(Exception):
@@ -81,32 +58,21 @@ class UnknownException(Exception):
     pass
 
 
-def is_complete_credentials(cred: Credentials) -> bool:
-    return "AccessKeyId" in cred and "SecretKey" in cred and "SessionToken" in cred
-
-
 class ScribeAuth:
-    def __init__(self, param: PoolConfiguration):
+    def __init__(self, client_id: str, user_pool_id: str):
         """Constructs an authorisation client.
-
-        PoolConfiguration:
 
         :param client_id: The client ID of the application provided by Scribe.
 
         :param user_pool_id: The user pool ID provided by Scribe.
-
-        :param identity_pool_id: The identity pool ID provided by Scribe. (Optional)
         """
         config = Config(signature_version=botocore.UNSIGNED)
         self.client_unsigned = boto3.client(
             "cognito-idp", config=config, region_name="eu-west-2"
         )
         self.client_signed = boto3.client("cognito-idp", region_name="eu-west-2")
-        self.client_id = param.get("client_id")
-        self.user_pool_id = param.get("user_pool_id")
-        self.identity_pool_id = param.get("identity_pool_id")
-        if param.get("identity_pool_id"):
-            self.fed_client = boto3.client("cognito-identity", region_name="eu-west-2")
+        self.client_id = client_id
+        self.user_pool_id = user_pool_id
 
     def change_password(
         self, username: str, password: str, new_password: str
@@ -198,17 +164,19 @@ class ScribeAuth:
             raise err
 
     @overload
-    def get_tokens(self, **param: Unpack[UsernamePassword]) -> Tokens | Challenge:
-        ...
+    def get_tokens(
+        self, *, username: str = "", password: str = ""
+    ) -> Tokens | Challenge: ...
 
     @overload
-    def get_tokens(self, **param: Unpack[RefreshToken]) -> Tokens | Challenge:
-        ...
+    def get_tokens(self, *, refresh_token: str = "") -> Tokens | Challenge: ...
 
-    def get_tokens(self, **param) -> Tokens | Challenge:
+    def get_tokens(
+        self, *, username: str = "", refresh_token: str = "", password: str = ""
+    ) -> Tokens | Challenge:
         """A user gets their tokens (refresh_token, access_token and id_token).
 
-        It is possible to pass a UsernamePassword or a RefreshToken:
+        It is possible to pass a username/password pair or a refresh token:
 
         :param username: Username (usually an email address).
         :type username: str
@@ -222,18 +190,13 @@ class ScribeAuth:
 
         It returns Tokens or a Challenge:
 
-        :return: Tokens -- Dictionary {"refresh_token": "str", "access_token": "str", "id_token": "str"}
-
-        :return: Challenge -- Dictionary { "challenge_name": "str", "session": "str"}
+        :return: Tokens or Challenge
+        :rtype: Tokens | Challenge
         """
-        refresh_token = param.get("refresh_token")
-        username = param.get("username")
-        password = param.get("password")
-        if refresh_token == None:
-            if isinstance(username, str) and isinstance(password, str):
-                return self.__get_tokens_with_pair(username, password)
-        elif isinstance(refresh_token, str):
+        if refresh_token:
             return self.__get_tokens_with_refresh(refresh_token)
+        elif username and password:
+            return self.__get_tokens_with_pair(username, password)
         raise UnauthorizedException(
             "Username and/or Password are missing or refresh_token is missing"
         )
@@ -252,16 +215,17 @@ class ScribeAuth:
         :param code: Code generated from the auth app.
         :type code: str
 
-        :return: Tokens -- Dictionary {"refresh_token": "str", "access_token": "str", "id_token": "str"}
+        :return: Tokens
+        :rtype: Tokens
         """
         try:
             response = self.__respond_to_mfa_challenge(username, session, code)
             result = response.get("AuthenticationResult")
-            return {
-                "refresh_token": result.get("RefreshToken", ""),
-                "access_token": result.get("AccessToken", ""),
-                "id_token": result.get("IdToken", ""),
-            }
+            return Tokens(
+                refresh_token=result.get("RefreshToken", ""),
+                access_token=result.get("AccessToken", ""),
+                id_token=result.get("IdToken", ""),
+            )
         except self.client_signed.exceptions.CodeMismatchException:
             raise UnauthorizedException("Wrong MFA code")
         except self.client_signed.exceptions.ExpiredCodeException:
@@ -288,144 +252,27 @@ class ScribeAuth:
         except Exception:
             raise Exception("InternalServerError: Try again later")
 
-    def get_federated_id(self, id_token: str) -> str:
-        """A user gets their federated id.
-
-        :param id_token: Id token to use.
-
-        :return: str
-        """
-        if not hasattr(self, "user_pool_id"):
-            raise MissingIdException("Missing user pool ID")
-        if not hasattr(self, "fed_client"):
-            raise MissingIdException(
-                "Federated pool ID is not provided. Create a new ScribeAuth object using identity_pool_id"
-            )
-        if self.identity_pool_id is not None:
-            try:
-                response = self.fed_client.get_id(
-                    IdentityPoolId=self.identity_pool_id,
-                    Logins={
-                        f"cognito-idp.eu-west-2.amazonaws.com/{self.user_pool_id}": id_token
-                    },
-                )
-                if not response.get("IdentityId"):
-                    raise UnknownException("Could not retrieve federated id")
-                return response.get("IdentityId")
-            except self.fed_client.exceptions.NotAuthorizedException:
-                raise UnauthorizedException("Could not retrieve federated id")
-            except self.fed_client.exceptions.TooManyRequestsException:
-                raise TooManyRequestsException("Too many requests. Try again later")
-            except Exception as err:
-                raise err
-        else:
-            raise Exception(
-                "Federated pool ID is not provided. Create a new ScribeAuth object using identity_pool_id"
-            )
-
-    def get_federated_credentials(self, id: str, id_token: str) -> Credentials:
-        """A user gets their federated credentials (AccessKeyId, SecretKey and SessionToken).
-
-        :param id: Federated id.
-
-        :param id_token: Id token to use.
-
-        :return: Credentials -- Dictionary {"AccessKeyId": "str", "SecretKey": "str", "SessionToken": "str", "Expiration": "str"}
-        """
-        if not hasattr(self, "user_pool_id"):
-            raise MissingIdException("Missing user pool ID")
-        if not hasattr(self, "fed_client"):
-            raise MissingIdException(
-                "Federated pool ID is not provided. Create a new ScribeAuth object using identity_pool_id"
-            )
-        try:
-            response = self.fed_client.get_credentials_for_identity(
-                IdentityId=id,
-                Logins={
-                    f"cognito-idp.eu-west-2.amazonaws.com/{self.user_pool_id}": id_token
-                },
-            )
-            all_credentials = response.get("Credentials")
-            accessKeyId = all_credentials.get("AccessKeyId")
-            secretKey = all_credentials.get("SecretKey")
-            sessionToken = all_credentials.get("SessionToken")
-            expiration = all_credentials.get("Expiration")
-            if (
-                accessKeyId != None
-                and secretKey != None
-                and sessionToken != None
-                and expiration != None
-            ):
-                credentials = Credentials(
-                    AccessKeyId=accessKeyId,
-                    SecretKey=secretKey,
-                    SessionToken=sessionToken,
-                    Expiration=expiration,
-                )
-
-                if not is_complete_credentials(credentials):
-                    raise UnknownException("Could not retrieve tokens")
-                return credentials
-            else:
-                raise UnknownException("Could not retrieve federated credentials")
-        except self.fed_client.exceptions.NotAuthorizedException:
-            raise UnauthorizedException("Could not retrieve federated credentials")
-        except self.fed_client.exceptions.TooManyRequestsException:
-            raise TooManyRequestsException("Too many requests. Try again later")
-        except self.fed_client.exceptions.ResourceNotFoundException:
-            raise ResourceNotFoundException("Invalid federated_id")
-        except Exception as err:
-            raise err
-
-    def get_signature_for_request(self, request: AWSRequest, credentials: Credentials):
-        """A user gets a signature for a request.
-
-        :param request: Request to send.
-
-        :param credentials: Credentials for the signature creation.
-
-        :return: Headers -- Headers containing the signature for the request.
-        """
-        try:
-            session = botocore.session.Session()
-            session.set_credentials(
-                access_key=credentials["AccessKeyId"],
-                secret_key=credentials["SecretKey"],
-                token=credentials["SessionToken"],
-            )
-            signer = SigV4Auth(
-                credentials=session.get_credentials(),
-                service_name="execute-api",
-                region_name="eu-west-2",
-            )
-            request.context["payload_signing_enabled"] = False
-            signer.add_auth(request=request)
-            prepped = request.prepare()
-            return prepped.headers
-        except Exception as err:
-            raise err
-
     def __get_tokens_with_pair(
         self, username: str, password: str
     ) -> Tokens | Challenge:
         auth_result = "AuthenticationResult"
-        if username != None and password != None:
+        if username is not None and password is not None:
             try:
                 response = self.__initiate_auth(username, password)
                 result = response.get(auth_result)
                 if "ChallengeName" in response:
-                    return {
-                        "challenge_name": response.get("ChallengeName"),
-                        "session": response.get("Session"),
-                    }
+                    return Challenge(
+                        challenge_name=response.get("ChallengeName"),
+                        session=response.get("Session"),
+                    )
                 else:
                     refresh_token_resp = result.get("RefreshToken")
                     access_token_resp = result.get("AccessToken")
                     id_token_resp = result.get("IdToken")
                     if (
-                        refresh_token_resp != None
-                        and access_token_resp != None
-                        and id_token_resp != None
+                        refresh_token_resp is not None
+                        and access_token_resp is not None
+                        and id_token_resp is not None
                     ):
                         return Tokens(
                             refresh_token=refresh_token_resp,
@@ -454,7 +301,7 @@ class ScribeAuth:
             result = response.get(auth_result)
             access_token_resp = result.get("AccessToken")
             id_token_resp = result.get("IdToken")
-            if access_token_resp != None and id_token_resp != None:
+            if access_token_resp is not None and id_token_resp is not None:
                 return Tokens(
                     refresh_token=refresh_token,
                     access_token=access_token_resp,

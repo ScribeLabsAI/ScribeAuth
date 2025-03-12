@@ -12,7 +12,7 @@ This library interacts directly with our authentication provider [AWS Cognito](h
 pip install scribeauth
 ```
 
-This library requires Python >= 3.10 that supports typing.
+This library requires Python >= 3.11 that supports typing.
 
 ## Methods
 
@@ -58,30 +58,6 @@ access = ScribeAuth(client_id)
 access.revoke_refresh_token('refresh_token')
 ```
 
-### 5. Getting federated id
-
-```python
-from scribeauth import ScribeAuth
-access = ScribeAuth({'client_id': your_client_id, 'user_pool_id': your_user_pool_id, 'identity_pool_id': your_identity_pool_id})
-access.get_federated_id('your_id_token')
-```
-
-### 6. Getting federated credentials
-
-```python
-from scribeauth import ScribeAuth
-access = ScribeAuth({'client_id': your_client_id, 'user_pool_id': your_user_pool_id, 'identity_pool_id': your_identity_pool_id})
-access.get_federated_credentials('your_federated_id', 'your_id_token')
-```
-
-### 7. Getting signature for request
-
-```python
-from scribeauth import ScribeAuth
-access = ScribeAuth({'client_id': your_client_id, 'user_pool_id': your_user_pool_id, 'identity_pool_id': your_identity_pool_id})
-access.get_signature_for_request(request='your_request', credentials='your_federated_credentials')
-```
-
 ## Flow
 
 - If you never have accessed your Scribe account, it probably still contains the temporary password we generated for you. You can change it directly on the [platform](https://platform.scribelabs.ai) or with the `change_password` method. You won't be able to access anything else until the temporary password has been changed.
@@ -92,10 +68,6 @@ access.get_signature_for_request(request='your_request', credentials='your_feder
 
 - In case you suspect that your refresh token has been leaked, you can revoke it with `revoke_token`. This will also invalidate any access/id token that has been issued with it. In order to get a new one, you'll need to use your username and password again.
 
-- You can get your federated id by using `get_federated_id` and providing your id token. The federated id will allow you to use `get_federated_credentials` to get an access key id, secret key and session token.
-
-- Every API call to be made to Scribe's API Gateway needs to have a signature. You can get the signature for your request by using `get_signature_for_request`. Provide the request you'll be using and your credentials (use `get_federated_credentials` to get them).
-
 ## Command line
 
 You can also use the package as follows for quick access to tokens:
@@ -103,6 +75,12 @@ You can also use the package as follows for quick access to tokens:
 ```bash
 python -m scribeauth --client_id clientid --user_pool_id user_pool_id --username username --password password
 ```
+
+## Development
+
+First step is to install poetry https://python-poetry.org/docs/. Then `poetry install` will install all the dependencies. Might require setting a virtualenv through poetry itself, or manually.
+
+Run the tests with `poetry run pytest`.
 
 ---
 

@@ -6,10 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import json
+
 project = "Scribe Auth"
-copyright = "2023, Scribe Labs Limited"
+copyright = "2025, Scribe Labs Limited"
 author = "Ailin Venerus"
-release = "1.0.2"
+with open("../.release-please-manifest.json") as f:
+    release = json.load(f)["."]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

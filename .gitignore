@@ -10,3 +10,4 @@ auth
 venv
 .env
 docs
+poetry.lock
