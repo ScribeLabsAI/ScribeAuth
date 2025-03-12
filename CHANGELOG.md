@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/ScribeLabsAI/ScribeAuth/compare/1.2.0...1.2.1) (2025-03-12)
+
+
+### Dependencies
+
+* **deps:** bump importlib-metadata from 6.9.0 to 7.0.0 ([#128](https://github.com/ScribeLabsAI/ScribeAuth/issues/128)) ([8011040](https://github.com/ScribeLabsAI/ScribeAuth/commit/801104005ffe3a164c615edb95de9b99e9c3f787))
+* **deps:** bump the prod-dependencies group with 13 updates ([#126](https://github.com/ScribeLabsAI/ScribeAuth/issues/126)) ([d993280](https://github.com/ScribeLabsAI/ScribeAuth/commit/d99328057fe53a36d766639a44bf8cef3855085c))
+
 ## [1.2.0](https://github.com/ScribeLabsAI/ScribeAuth/compare/1.1.1...1.2.0) (2023-11-29)
 
 
