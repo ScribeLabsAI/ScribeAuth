@@ -32,4 +32,5 @@ sphinx = "^8.2.3"
 pyotp = "^2.9.0"
 dotenv = "^0.9.9"
 sphinx-markdown-builder = "^0.6.8"
+coverage = "^7.6.12"
 
