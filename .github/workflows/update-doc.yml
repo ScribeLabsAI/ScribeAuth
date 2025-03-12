@@ -16,7 +16,7 @@ jobs:
       - name: Create md files
         run: sphinx-build -M markdown ./docs_source ./docs
       - name: Update docs website
-        uses: car-on-sale/action-pull-request-another-repo@v1.3.1
+        uses: car-on-sale/action-pull-request-another-repo@v1.04
         env:
           API_TOKEN_GITHUB: ${{ secrets.WEBSITE_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.WEBSITE_GITHUB_TOKEN }}
