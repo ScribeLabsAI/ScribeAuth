@@ -17,6 +17,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'poetry'
+          cache-dependency-path: 'poetry.lock'
       - name: Install deps
         run: poetry install
       - name: Create md files
