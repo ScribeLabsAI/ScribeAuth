@@ -382,14 +382,14 @@ class SelfManagedSigner:
     """
 
     def sign(self, scopes: list[str], exp: int) -> str:
-        """Signs the private key with the private key.
+        """Signs a JWT with the private key.
 
         :param scopes: The scopes to include in the JWT.
         :type scopes: list[str]
         :param exp: The expiration time of the JWT in seconds.
         :type exp: int
 
-        :return: The signed private key.
+        :return: The signed JWT.
         :rtype: str
         """
 
@@ -409,12 +409,12 @@ class SelfManagedSigner:
 
 
 def decode_self_signed_jwt(token: str, public_key: str) -> dict:
-    """Decodes a JWT token.
+    """Decodes a JWT.
 
-    :param token: The JWT token to decode.
+    :param token: The JWT to decode.
     :type token: str
 
-    :return: The decoded JWT token.
+    :return: The decoded JWT.
     :rtype: dict
     """
 
