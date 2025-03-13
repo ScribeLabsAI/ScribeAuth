@@ -6,7 +6,8 @@ readme = "README.md"
 license = "LICENSE.md"
 requires-python = ">=3.11"
 dependencies = [
-    "boto3[cognito-idp] (>=1.37.11,<2.0.0)"
+    "boto3[cognito-idp] (>=1.37.11,<2.0.0)",
+    "pyjwt[crypto] (>=2.10.1,<3.0.0)"
 ]
 keywords = [
     'Development Status :: 4 - Beta',

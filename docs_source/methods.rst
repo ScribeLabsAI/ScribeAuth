@@ -48,3 +48,19 @@ With refresh token
    from scribeauth import ScribeAuth
    access = ScribeAuth(client_id)
    access.revoke_refresh_token('refresh_token')
+
+5. Self-signing tokens
+---------------------
+
+.. code:: python
+
+   from scribeauth import SelfManagedSigner
+
+    private_key = "" # your private key corresponding to the public key communicated _to_ Scribe
+    issuer = "" # your issuer, communicated _to_ Scribe
+    sub = "" # Account id, communicated _by_ Scribe
+    signer = SelfManagedSigner(private_key, issuer, sub)
+
+    scopes = [...some scopes] # the scopes, mapping communicated _to_ Scribe
+    exp = 0 # expiration timestamp
+    token = signer.sign(scopes, exp)

@@ -4,6 +4,7 @@ from typing import overload
 import boto3
 import botocore
 import botocore.session
+import jwt
 from botocore.config import Config
 from botocore.exceptions import NoAuthTokenError
 
@@ -363,3 +364,60 @@ class ScribeAuth:
             Token=refresh_token, ClientId=self.client_id
         )
         return response
+
+
+@dataclass
+class SelfManagedSigner:
+    private_key: str
+    """
+    Private key related to the public key provided to Scribe.
+    """
+    issuer: str
+    """
+    Issuer as communicated to Scribe. Usually the company name.
+    """
+    sub: str
+    """
+    Account id. Provided by Scribe.
+    """
+
+    def sign(self, scopes: list[str], exp: int) -> str:
+        """Signs the private key with the private key.
+
+        :param scopes: The scopes to include in the JWT.
+        :type scopes: list[str]
+        :param exp: The expiration time of the JWT in seconds.
+        :type exp: int
+
+        :return: The signed private key.
+        :rtype: str
+        """
+
+        payload = {
+            "iss": self.issuer,
+            "sub": self.sub,
+            "aud": "https://apis.scribelabs.ai",
+            "scope": " ".join(scopes),
+            "exp": exp,
+        }
+
+        return jwt.encode(
+            payload,
+            self.private_key,
+            algorithm="RS256",
+        )
+
+
+def decode_self_signed_jwt(token: str, public_key: str) -> dict:
+    """Decodes a JWT token.
+
+    :param token: The JWT token to decode.
+    :type token: str
+
+    :return: The decoded JWT token.
+    :rtype: dict
+    """
+
+    return jwt.decode(
+        token, public_key, algorithms=["RS256"], audience="https://apis.scribelabs.ai"
+    )
