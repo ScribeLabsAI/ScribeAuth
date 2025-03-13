@@ -1,6 +1,5 @@
 import datetime
 import os
-from tarfile import data_filter
 from time import sleep
 
 import jwt
