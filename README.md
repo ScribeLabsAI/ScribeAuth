@@ -6,8 +6,7 @@ You first need a Scribe account and a client ID. Both can be requested at suppor
 
 This library interacts directly with our authentication provider [AWS Cognito](https://aws.amazon.com/cognito/) meaning that your username and password never transit through our servers.
 
-If you want to use you own tokens, see [Self-signing tokens](#self-signing-tokens).
-
+If you want to use your own tokens, see [Self-signing tokens](#self-signing-tokens).
 ## Installation
 
 ```bash
